@@ -32,30 +32,6 @@ class GearSet:
         return f"{self.ratio:^{PRINT_FORMAT}} -> [{list(self.driving)} : {list(self.driven)}]"
 
 
-def pick_best(gear_set, preferred_drive_gear, preferred_driven_gear) -> list:
-    shortest_train_length = min([len(gs.driving) for gs in gear_set])
-    shortest_trains = {
-        gs for gs in gear_set if len(gs.driving) == shortest_train_length
-    }
-    preffered_smallest = {
-        st
-        for st in shortest_trains
-        if any(True for s in st.driving if s == preferred_drive_gear)
-    }
-    preffered_largest = {
-        st
-        for st in shortest_trains
-        if any(True for s in st.driven if s == preferred_driven_gear)
-    }
-    if preffered_smallest & preffered_largest:
-        return (preffered_smallest & preffered_largest).pop()
-    elif preffered_smallest:
-        return preffered_smallest.pop()
-    elif preffered_largest:
-        return preffered_largest.pop()
-    return shortest_trains.pop()
-
-
 def filter_best(gear_set):
     shortest_train_length = min([len(gs.driving) for gs in gear_set])
     shortest_trains = {
@@ -140,35 +116,20 @@ imperial_pitches = [  # tpi
 ]
 
 
-gear_sets = []
-combinations = list(set([c for c in itertools.combinations(gears, 6)]))
-for combination in combinations:
-    unpaired = list(itertools.combinations(combination, 3))
-    halflength = len(unpaired)
-    paired = zip(unpaired, unpaired[::-1])
-    for pair in paired:
-        gear_sets.append(GearSet(pair[0], pair[1]))
-
-combinations = list(set([c for c in itertools.combinations(gears, 4)]))
-for combination in combinations:
-    unpaired = list(itertools.combinations(combination, 2))
-    halflength = len(unpaired)
-    paired = zip(unpaired, unpaired[::-1])
-    for pair in paired:
-        gear_sets.append(GearSet(pair[0], pair[1]))
-
-combinations = list(set([c for c in itertools.combinations(gears, 2)]))
-for combination in combinations:
-    unpaired = list(itertools.combinations(combination, 1))
-    halflength = len(unpaired)
-    paired = zip(unpaired, unpaired[::-1])
-    for pair in paired:
-        gear_sets.append(GearSet(pair[0], pair[1]))
+def generete_gear_set(length):
+    if length % 2 != 0:
+        raise ValueError("Length must be even")
+    gear_sets = []
+    combinations = list(set([c for c in itertools.combinations(gears, length)]))
+    for combination in combinations:
+        unpaired = list(itertools.combinations(combination, length // 2))
+        paired = zip(unpaired, unpaired[::-1])
+        for pair in paired:
+            gear_sets.append(GearSet(pair[0], pair[1]))
+    return gear_sets
 
 
-gear_sets = sorted(gear_sets)
-
-
+gear_sets = sorted(generete_gear_set(2) + generete_gear_set(4) + generete_gear_set(6))
 starting_pitch = 1 / 8  # 8 tpi leadscrew in inches per thread
 
 print()
