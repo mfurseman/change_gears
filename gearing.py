@@ -40,8 +40,35 @@ def filter_best(gear_set):
     return list(shortest_trains)
 
 
-# gears = sorted([20, 20, 30, 30, 35, 38, 40, 45, 46, 50, 55, 60, 65, 73])
-gears = sorted([20, 20, 22, 28, 30, 32, 38, 38, 40, 45, 50, 50, 55, 73])
+def filter_ratio(gear_sets, ratio):
+    left = bisect.bisect_left(
+        gear_sets,
+        ratio * (1 - TARGET_ERROR),
+        hi=len(gear_sets) - 1,
+        key=lambda gs: gs.ratio,
+    )
+    right = bisect.bisect_right(
+            gear_sets,
+            ratio * (1 + TARGET_ERROR),
+            hi=len(gear_sets) - 1,
+            key=lambda gs: gs.ratio,
+        ) + 1
+    return gear_sets[left:right]
+
+
+def generete_gear_set(length):
+    if length % 2 != 0:
+        raise ValueError("Length must be even")
+    gear_sets = []
+    combinations = list(set([c for c in itertools.combinations(gears, length)]))
+    for combination in combinations:
+        unpaired = list(itertools.combinations(combination, length // 2))
+        paired = zip(unpaired, unpaired[::-1])
+        for pair in paired:
+            gear_sets.append(GearSet(pair[0], pair[1]))
+    return gear_sets
+
+
 gears = sorted([20, 20, 22, 28, 30, 32, 38, 38, 40, 50, 50, 55, 73])
 
 
@@ -116,19 +143,6 @@ imperial_pitches = [  # tpi
 ]
 
 
-def generete_gear_set(length):
-    if length % 2 != 0:
-        raise ValueError("Length must be even")
-    gear_sets = []
-    combinations = list(set([c for c in itertools.combinations(gears, length)]))
-    for combination in combinations:
-        unpaired = list(itertools.combinations(combination, length // 2))
-        paired = zip(unpaired, unpaired[::-1])
-        for pair in paired:
-            gear_sets.append(GearSet(pair[0], pair[1]))
-    return gear_sets
-
-
 gear_sets = sorted(generete_gear_set(2) + generete_gear_set(4) + generete_gear_set(6))
 starting_pitch = 1 / 8  # 8 tpi leadscrew in inches per thread
 
@@ -138,22 +152,7 @@ print("-" * 120)
 print("  mm \t ratio \t\t Gearsets")
 for pitch in metric_pitches:
     ratio = INCH_TO_MM * starting_pitch / pitch
-    left = bisect.bisect_left(
-        gear_sets,
-        ratio * (1 - TARGET_ERROR),
-        hi=len(gear_sets) - 1,
-        key=lambda gs: gs.ratio,
-    )
-    right = (
-        bisect.bisect_right(
-            gear_sets,
-            ratio * (1 + TARGET_ERROR),
-            hi=len(gear_sets) - 1,
-            key=lambda gs: gs.ratio,
-        )
-        + 1
-    )
-    gear_set = filter_best(gear_sets[left:right])
+    gear_set = filter_best(filter_ratio(gear_sets, ratio))
     print(f"{pitch:^{PRINT_FORMAT}}\t({ratio:^{PRINT_FORMAT}}) \t->\t{gear_set}")
 
 print()
@@ -162,20 +161,5 @@ print("-" * 120)
 print("  tpi \t ratio \t\t GearSets")
 for pitch in imperial_pitches:
     ratio = starting_pitch * pitch
-    left = bisect.bisect_left(
-        gear_sets,
-        ratio * (1 - TARGET_ERROR),
-        hi=len(gear_sets) - 1,
-        key=lambda gs: gs.ratio,
-    )
-    right = (
-        bisect.bisect_right(
-            gear_sets,
-            ratio * (1 + TARGET_ERROR),
-            hi=len(gear_sets) - 1,
-            key=lambda gs: gs.ratio,
-        )
-        + 1
-    )
-    gear_set = filter_best(gear_sets[left:right])
+    gear_set = filter_best(filter_ratio(gear_sets, ratio))
     print(f"{pitch:^{PRINT_FORMAT}}\t({ratio:^{PRINT_FORMAT}}) \t->\t{gear_set}")
